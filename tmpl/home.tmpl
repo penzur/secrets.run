@@ -1,0 +1,16 @@
+{{define "content"}}
+<div class="center-container">
+    <div class="center-box">
+        <h1>Create Transient Data</h1>
+        <form id="secrets-form" action="/s" method="POST">
+            {{.csrfField}}
+            <p>
+                <textarea class="code" placeholder="Write something" name="secret" cols="64" rows="16"></textarea>
+            </p>
+            <p>
+                <button type="submit">LET'S GO</button>
+            </p>
+        </form>
+    </div>
+</div>
+{{end}}
