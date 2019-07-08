@@ -23,8 +23,9 @@ var (
 	spaceRx   = regexp.MustCompile(`\s+`)
 	browserRx = regexp.MustCompile(`(?i)gecho|firefox|chrome|presto|applewebkit|trident/`)
 
-	env = os.Getenv("ENV")
-	key = os.Getenv("CSRF_KEY")
+	env  = os.Getenv("ENV")
+	key  = os.Getenv("CSRF_KEY")
+	port = ":" + os.Getenv("PORT")
 )
 
 func main() {
@@ -40,7 +41,6 @@ func main() {
 	r.Get("/{id}", view)
 	r.Get("/", home)
 
-	port := ":" + os.Getenv("PORT")
 	protect := csrf.Protect([]byte(key), csrf.Secure(isSecure))
 
 	log.Fatal(http.ListenAndServe(
