@@ -12,15 +12,22 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/csrf"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/pat"
 )
 
-var secrets = map[string]string{}
+var (
+	secrets = map[string]string{}
+
+	linkRx    = regexp.MustCompile(`https?:\/\/[a-zA-Z0-9\.:]+\/.{8,}`)
+	spaceRx   = regexp.MustCompile(`\s+`)
+	browserRx = regexp.MustCompile(`(?i)gecho|firefox|chrome|presto|applewebkit|trident/`)
+
+	env = os.Getenv("ENV")
+	key = os.Getenv("CSRF_KEY")
+)
 
 func main() {
-	var env = os.Getenv("ENV")
-
-	var key = os.Getenv("CSRF_KEY")
 	isSecure := true
 	if env == "" {
 		isSecure = false
@@ -36,13 +43,29 @@ func main() {
 	port := ":" + os.Getenv("PORT")
 	protect := csrf.Protect([]byte(key), csrf.Secure(isSecure))
 
-	log.Fatal(http.ListenAndServe(port, protect(r)))
+	log.Fatal(http.ListenAndServe(
+		port,
+		handlers.LoggingHandler(os.Stdout, browser(protect(r))),
+	))
+}
+
+func browser(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		agent := r.UserAgent()
+
+		if !browserRx.MatchString(agent) {
+			http.Error(w, "Not Found", http.StatusNotFound)
+			return
+		}
+
+		h.ServeHTTP(w, r)
+	})
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
 	link := r.URL.Query().Get("link")
 
-	if regexp.MustCompile(`https?:\/\/[a-zA-Z0-9\.:]+\/.{8,}`).MatchString(link) {
+	if linkRx.MatchString(link) {
 		render(w, "secret", map[string]interface{}{
 			"link": link,
 		})
@@ -81,7 +104,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	secret := r.PostFormValue("secret")
-	secret = regexp.MustCompile(`\s+`).ReplaceAllString(secret, " ")
+	secret = spaceRx.ReplaceAllString(secret, " ")
 	secret = strings.Trim(secret, " ")
 
 	if secret == "" {
@@ -110,5 +133,5 @@ func render(w http.ResponseWriter, secret string, ctx interface{}) {
 		fmt.Sprintf("tmpl/%s.tmpl", secret),
 		"tmpl/css/main.css",
 	)
-	tmpl.ExecuteTemplate(w, "layout", ctx)
+	_ = tmpl.ExecuteTemplate(w, "layout", ctx)
 }
