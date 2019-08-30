@@ -1,0 +1,19 @@
+{
+  "name": "secrets",
+  "profile": "default",
+  "regions": [
+    "us-east-1"
+  ],
+  "environment": {
+    "CSRF_KEY": "$CSRF_KEY",
+    "ENV": "$ENV",
+    "GIN_MODE": "release"
+  },
+  "stages": {
+    "staging": {
+      "domain": "secrets.run",
+      "zone": false
+    }
+  }
+}
+
